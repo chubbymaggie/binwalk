@@ -58,10 +58,10 @@ def remove_binwalk_module(pydir=None, pybin=None):
             remove_tree(path)
         except OSError as e:
             pass
-    
+
     if not pybin:
         pybin = which(MODULE_NAME)
-    
+
     if pybin:
         try:
             print("removing '%s'" % pybin)
@@ -100,6 +100,11 @@ class CleanCommand(Command):
 
     def run(self):
         try:
+            os.remove("%s/magic/%s" % (MODULE_NAME, MODULE_NAME))
+        except Exception:
+            pass
+
+        try:
             remove_tree("build")
         except KeyboardInterrupt as e:
             raise e
@@ -134,12 +139,12 @@ if "install" in sys.argv or "build" in sys.argv:
 
 # The data files to install along with the module
 data_dirs = ["magic", "config", "plugins", "modules", "core"]
-install_data_files = [os.path.join("libs", "*.so")]
+install_data_files = [os.path.join("libs", "*.so"), os.path.join("libs", "*.dylib")]
 
 for data_dir in data_dirs:
     install_data_files.append("%s%s*" % (data_dir, os.path.sep))
 
-if os.getenv("BUILD_PYQTGRAPH") == "1":
+if os.getenv("BUILD_PYQTGRAPH") == "yes":
     install_data_files.append(os.path.join("libs", "pyqtgraph", "*.py"))
 
     for (root, dirs, files) in os.walk(os.path.join(MODULE_NAME, "libs", "pyqtgraph")):
@@ -149,7 +154,7 @@ if os.getenv("BUILD_PYQTGRAPH") == "1":
 
 # Install the module, script, and support files
 setup(name = MODULE_NAME,
-      version = "2.0.0",
+      version = "2.1.0",
       description = "Firmware analysis tool",
       author = "Craig Heffner",
       url = "https://github.com/devttys0/%s" % MODULE_NAME,

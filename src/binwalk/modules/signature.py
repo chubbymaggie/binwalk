@@ -23,11 +23,11 @@ class Signature(Module):
             Option(short='A',
                    long='opcodes',
                    kwargs={'enabled' : True, 'search_for_opcodes' : True},
-                   description='Scan target file(s) for common executable opcodes'),
+                   description='Scan target file(s) for common executable opcode signatures'),
             Option(short='C',
                    long='cast',
                    kwargs={'enabled' : True, 'cast_data_types' : True},
-                   description='Cast offsets as a given data type (use -y to specify the data type / endianess)'),
+                   description='Cast offsets as a given data type (use -y to specify the data type / endianness)'),
             Option(short='m',
                    long='magic',
                    kwargs={'enabled' : True, 'magic_files' : []},
@@ -53,6 +53,8 @@ class Signature(Module):
     VERBOSE_FORMAT = "%s    %d"
 
     def init(self):
+        self.keep_going = self.config.keep_going
+
         # Create Signature and MagicParser class instances. These are mostly for internal use.
         self.smart = binwalk.core.smart.Signature(self.config.filter, ignore_smart_signatures=self.dumb_scan)
         self.parser = binwalk.core.parser.MagicParser(self.config.filter, self.smart)
@@ -69,6 +71,7 @@ class Signature(Module):
             ]
 
         elif self.cast_data_types:
+            self.keep_going = True
             self.magic_files = [
                     self.config.settings.user.bincast,
                     self.config.settings.system.bincast,
@@ -82,10 +85,11 @@ class Signature(Module):
         # Parse the magic file(s) and initialize libmagic
         binwalk.core.common.debug("Loading magic files: %s" % str(self.magic_files))
         self.mfile = self.parser.parse(self.magic_files)
-        self.magic = binwalk.core.magic.Magic(self.mfile)
-        
+        self.magic = binwalk.core.magic.Magic(self.mfile, keep_going=self.keep_going)
+
         # Once the temporary magic files are loaded into libmagic, we don't need them anymore; delete the temp files
-        self.parser.rm_magic_files()
+        if not binwalk.core.common.DEBUG:
+            self.parser.rm_magic_files()
 
         self.VERBOSE = ["Signatures:", self.parser.signature_count]
 
@@ -129,7 +133,7 @@ class Signature(Module):
                 magic_result = self.magic.buffer(data[candidate_offset:candidate_offset+fp.block_peek_size])
                 if not magic_result:
                     continue
-                
+
                 # The smart filter parser returns a binwalk.core.module.Result object
                 r = self.smart.parse(magic_result)
 
@@ -138,11 +142,11 @@ class Signature(Module):
 
                 # Provide an instance of the current file object
                 r.file = fp
-        
+
                 # Register the result for futher processing/display
                 # self.result automatically calls self.validate for result validation
                 self.result(r=r)
-       
+
                 # Is this a valid result and did it specify a jump-to-offset keyword?
                 if r.valid and r.jump > 0:
                     absolute_jump_offset = r.offset + r.jump

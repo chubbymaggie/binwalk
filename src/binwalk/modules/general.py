@@ -3,6 +3,7 @@
 import os
 import sys
 import argparse
+import binwalk.core.idb
 import binwalk.core.filter
 import binwalk.core.common
 import binwalk.core.display
@@ -16,7 +17,7 @@ class General(Module):
     ORDER = 0
 
     DEFAULT_DEPENDS = []
-        
+
     CLI = [
         Option(long='length',
                short='l',
@@ -33,6 +34,10 @@ class General(Module):
                type=int,
                kwargs={'block' : 0},
                description='Set file block size'),
+        Option(long='continue',
+               short='k',
+               kwargs={'keep_going' : True},
+               description="Don't stop at the first match"),
         Option(long='swap',
                short='g',
                type=int,
@@ -70,7 +75,7 @@ class General(Module):
         Option(long='quiet',
                short='q',
                kwargs={'quiet' : True},
-               description='Supress output to stdout'),
+               description='Suppress output to stdout'),
         Option(long='verbose',
                short='v',
                kwargs={'verbose' : True},
@@ -100,6 +105,7 @@ class General(Module):
         Kwarg(name='verbose', default=False),
         Kwarg(name='files', default=[]),
         Kwarg(name='show_help', default=False),
+        Kwarg(name='keep_going', default=False),
     ]
 
     PRIMARY = False
@@ -107,7 +113,7 @@ class General(Module):
     def load(self):
         self.target_files = []
 
-        # Order is important with these two methods        
+        # Order is important with these two methods
         self._open_target_files()
         self._set_verbosity()
 
@@ -127,10 +133,11 @@ class General(Module):
                                                     verbose=self.verbose,
                                                     filter=self.filter,
                                                     fit_to_screen=self.format_to_terminal)
-        
+
         if self.show_help:
             show_help()
-            sys.exit(0)
+            if not binwalk.core.idb.LOADED_IN_IDA:
+                sys.exit(0)
 
     def reset(self):
         for fp in self.target_files:
@@ -153,7 +160,7 @@ class General(Module):
         Must be called after self._test_target_files so that self.target_files is properly set.
         '''
         # If more than one target file was specified, enable verbose mode; else, there is
-        # nothing in some outputs to indicate which scan corresponds to which file. 
+        # nothing in some outputs to indicate which scan corresponds to which file.
         if len(self.target_files) > 1 and not self.verbose:
             self.verbose = True
 
@@ -186,4 +193,4 @@ class General(Module):
                     raise e
                 except Exception as e:
                     self.error(description="Cannot open file : %s" % str(e))
-        
+

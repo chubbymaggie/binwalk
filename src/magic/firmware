@@ -365,8 +365,12 @@
 # Generic copyright signature
 0	string		Copyright			Copyright string:
 >9	byte		0				invalid
->9	string		x				"%s
->40	string		x				\b%s"
+>0	string		x				"%s
+>63	string		x				\b%s"
+0	string		copyright			Copyright string:
+>9	byte		0				invalid
+>0	string		x				"%s
+>63	string		x				\b%s"
 
 # Sercomm firmware header
 0	string		sErCoMm				Sercomm firmware signature,
@@ -514,8 +518,176 @@
 >14		beshort	x						uncompressed size: %d,
 >18		beshort	x						data offset from start of block: {math:16+%d}
 
-# Obfuscated Arcadyan firmware, used on the WRT120N
-0       belong  0x04010920              Obfuscated Arcadyan firmware (WRT120N?),
->0x68   belong  !0x00D50800             invalid
->0x68   belong  0x00D50800              see https://github.com/devttys0/wrt120n
+# Obfuscated Arcadyan firmware
+0x68    belong  0x00D50800                      Obfuscated Arcadyan firmware,
+>0      belong  x                               signature bytes: 0x%X,
+>0x70   belong  !\x00\x00\x00\x00\x00\x00\x00   invalid,
+>0x70   belong  0x00000000                      see https://github.com/devttys0/wrt120n/deobfuscator
+
+# Digi firmware images
+0xC0            string  Digi            Digi International firmware,
+>0xC8           beshort !0x4253
+>>0xC8          beshort !0x4950
+>>>0xC8         beshort !0x4944
+>>>>0xC8        beshort !0x444f
+>>>>>0xC8       beshort !0x4443
+>>>>>>0xC8      beshort !0x4f53
+>>>>>>>0xC8     beshort !0x4f43
+>>>>>>>>0xC8    beshort !0x4646
+>>>>>>>>>0xC8   beshort !0x5350         invalid header,
+>0xD4           belong  x               load address: 0x%.8X,
+>0xDC           belong  x               entry point: 0x%.8X,
+
+# Lancom firmware signatures, courtesy of christophvw
+0    string            ELSF              LANCOM firmware header,
+>22  string            x                 model: "%s",
+>18  string            x                 firmware version: "%.4s",
+>12  ubyte             255               Rel,
+>12  ubyte             253               alpha,
+>12  ubyte             220               PR,
+>12  ubyte             >0
+>>12 ubyte             <220              RC%d,
+>12  ubyte             >220
+>>12 ubyte             <237              RU{math:%d-220},
+>12  ubyte             0                 dev
+>17  ubyte             >0
+>>17 ubyte             x                 build %d
+#get build date
+>7   ubyte             !63
+#date is stored as string
+>>7  string            x                 ("%.8s")
+
+0    string            ELSO              LANCOM OEM file
+
+0    string            ELSB              LANCOM firmware loader,
+>22  string            x                 model: "%s",
+>18  string            x                 loader version: "%.4s",
+
+
+0    string            ELSC              LANCOM WWAN firmware,
+>4   ubyte             3
+>>5  beshort           0
+>>7  string            x                 "%s"
+
+0 string               ELSP                LANCOM file entry
+>202 string            @(RECENT_FIRMWARE)/ \b, file name:
+>>221 string           x                   "%s"
+>>221 string           x                   \b{file-name:%s}
+>(198.L+202) belong    2
+>>(198.L+206) belong   x                   \b, file size: %d bytes
+>>(198.L+206) belong   x                   \b{file-size:%d}
+>(198.L+202) belong    3
+>>&4 string            @(RECENT_FIRMWARE)/ \b, alias:
+>>&23 string           x                   "%s"
+>>&(&0.L(0)) belong    x
+>>>&4 belong           x                   \b, file size: %d bytes
+
+# Signatures to identify the start of a VxWorks symbol table
+8       string      \x00\x00\x05\x00\x00\x00\x00\x00    VxWorks symbol table, big endian,
+>4      belong      0                                   invalid 
+>4      belong      x                                   first entry: [type: function, code address: 0x%X,
+>0      belong      0                                   invalid
+>0      belong      x                                   symbol address: 0x%X]{display-once}
+>24     belong      !0x500
+>>24    belong      !0x700
+>>>24   belong      !0x900                              \b, invalid
+>40     belong      !0x500
+>>40    belong      !0x700
+>>>40   belong      !0x900                              \b, invalid
+>56     belong      !0x500
+>>56    belong      !0x700
+>>>56   belong      !0x900                              \b, invalid
+>72     belong      !0x500
+>>72    belong      !0x700
+>>>72   belong      !0x900                              \b, invalid
+
+8       string      \x00\x00\x07\x00\x00\x00\x00\x00    VxWorks symbol table, big endian,
+>4      belong      0                                   invalid
+>4      belong      x                                   first entry: [type: initialized data, code address: 0x%X,
+>0      belong      0                                   invalid
+>0      belong      x                                   symbol address: 0x%X]{display-once}
+>24     belong      !0x500
+>>24    belong      !0x700
+>>>24   belong      !0x900                              \b, invalid
+>40     belong      !0x500
+>>40    belong      !0x700
+>>>40   belong      !0x900                              \b, invalid
+>56     belong      !0x500
+>>56    belong      !0x700
+>>>56   belong      !0x900                              \b, invalid
+>72     belong      !0x500
+>>72    belong      !0x700
+>>>72   belong      !0x900                              \b, invalid
+
+8       string      \x00\x00\x09\x00\x00\x00\x00\x00    VxWorks symbol table, big endian,
+>4      belong      0                                   invalid
+>4      belong      x                                   first entry: [type: uninitialized data, code address: 0x%X,
+>0      belong      0                                   invalid
+>0      belong      x                                   symbol address: 0x%X]{display-once}
+>24     belong      !0x500
+>>24    belong      !0x700
+>>>24   belong      !0x900                              \b, invalid
+>40     belong      !0x500
+>>40    belong      !0x700
+>>>40   belong      !0x900                              \b, invalid
+>56     belong      !0x500
+>>56    belong      !0x700
+>>>56   belong      !0x900                              \b, invalid
+>72     belong      !0x500
+>>72    belong      !0x700
+>>>72   belong      !0x900                              \b, invalid
+
+8       string      \x00\x05\x00\x00\x00\x00\x00\x00    VxWorks symbol table, little endian,
+>4      lelong      0                                   invalid
+>4      lelong      x                                   first entry: [type: function, code address: 0x%X,
+>0      lelong      0                                   invalid
+>0      lelong      x                                   symbol address: 0x%X]{display-once}
+>24     lelong      !0x500
+>>24    lelong      !0x700
+>>>24   lelong      !0x900                              \b, invalid
+>40     lelong      !0x500
+>>40    lelong      !0x700
+>>>40   lelong      !0x900                              \b, invalid
+>56     lelong      !0x500
+>>56    lelong      !0x700
+>>>56   lelong      !0x900                              \b, invalid
+>72     lelong      !0x500
+>>72    lelong      !0x700
+>>>72   lelong      !0x900                              \b, invalid
+
+8       string      \x00\x07\x00\x00\x00\x00\x00\x00    VxWorks symbol table, little endian,
+>4      lelong      0                                   invalid
+>4      lelong      x                                   first entry: [type: initialized data, code address: 0x%X,
+>0      lelong      0                                   invalid
+>0      lelong      x                                   symbol address: 0x%X]{display-once}
+>24     lelong      !0x500
+>>24    lelong      !0x700
+>>>24   lelong      !0x900                              \b, invalid
+>40     lelong      !0x500
+>>40    lelong      !0x700
+>>>40   lelong      !0x900                              \b, invalid
+>56     lelong      !0x500
+>>56    lelong      !0x700
+>>>56   lelong      !0x900                              \b, invalid
+>72     lelong      !0x500
+>>72    lelong      !0x700
+>>>72   lelong      !0x900                              \b, invalid
+
+8       string      \x00\x09\x00\x00\x00\x00\x00\x00    VxWorks symbol table, little endian,
+>4      lelong      0                                   invalid
+>4      lelong      x                                   first entry: [type: uninitialized data, code address: 0x%X,
+>0      lelong      0                                   invalid
+>0      lelong      x                                   symbol address: 0x%X]{display-once}
+>24     lelong      !0x500
+>>24    lelong      !0x700
+>>>24   lelong      !0x900                              \b, invalid
+>40     lelong      !0x500
+>>40    lelong      !0x700
+>>>40   lelong      !0x900                              \b, invalid
+>56     lelong      !0x500
+>>56    lelong      !0x700
+>>>56   lelong      !0x900                              \b, invalid
+>72     lelong      !0x500
+>>72    lelong      !0x700
+>>>72   lelong      !0x900                              \b, invalid
 
