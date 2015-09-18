@@ -1,8 +1,6 @@
 import os
 import sys
-import curses
 import string
-import platform
 import binwalk.core.common as common
 from binwalk.core.compat import *
 from binwalk.core.module import Module, Option, Kwarg
@@ -31,15 +29,15 @@ class HexDiff(Module):
                    description='Perform a hexdump / diff of a file or files'),
             Option(short='G',
                    long='green',
-                   kwargs={'show_green' : True, 'show_blue' : False, 'show_red' : False},
+                   kwargs={'show_green' : True},
                    description='Only show lines containing bytes that are the same among all files'),
             Option(short='i',
                    long='red',
-                   kwargs={'show_red' : True, 'show_blue' : False, 'show_green' : False},
+                   kwargs={'show_red' : True},
                    description='Only show lines containing bytes that are different among all files'),
             Option(short='U',
                    long='blue',
-                   kwargs={'show_blue' : True, 'show_red' : False, 'show_green' : False},
+                   kwargs={'show_blue' : True},
                    description='Only show lines containing bytes that are different among some files'),
             Option(short='w',
                    long='terse',
@@ -48,9 +46,9 @@ class HexDiff(Module):
     ]
 
     KWARGS = [
-            Kwarg(name='show_red', default=True),
-            Kwarg(name='show_blue', default=True),
-            Kwarg(name='show_green', default=True),
+            Kwarg(name='show_red', default=False),
+            Kwarg(name='show_blue', default=False),
+            Kwarg(name='show_green', default=False),
             Kwarg(name='terse', default=False),
             Kwarg(name='enabled', default=False),
     ]
@@ -172,9 +170,9 @@ class HexDiff(Module):
             loop_count += 1
 
     def init(self):
-        # Disable the invalid description auto-filtering feature.
-        # This will not affect our own validation.
-        self.config.filter.show_invalid_results = True
+        # To mimic expected behavior, if all options are False, we show everything
+        if not any([self.show_red, self.show_green, self.show_blue]):
+            self.show_red = self.show_green = self.show_blue = True
 
         # Always disable terminal formatting, as it won't work properly with colorized output
         self.config.display.fit_to_screen = False
@@ -207,7 +205,8 @@ class HexDiff(Module):
             self.HEADER = self.HEADER[0]
 
         # Set up the tty for colorization, if it is supported
-        if hasattr(sys.stderr, 'isatty') and sys.stderr.isatty() and platform.system() != 'Windows':
+        if hasattr(sys.stderr, 'isatty') and sys.stderr.isatty() and not common.MSWindows():
+            import curses
             curses.setupterm()
             self.colorize = self._colorize
         else:

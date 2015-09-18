@@ -5,12 +5,12 @@ from binwalk.core.module import Module, Option, Kwarg
 
 class ArchResult(object):
     def __init__(self, **kwargs):
-        for (k,v) in kwargs.iteritems():
+        for (k,v) in binwalk.core.compat.iterator(kwargs):
             setattr(self, k, v)
 
 class Architecture(object):
     def __init__(self, **kwargs):
-        for (k, v) in kwargs.iteritems():
+        for (k, v) in binwalk.core.compat.iterator(kwargs):
             setattr(self, k, v)
 
 class Disasm(Module):
@@ -31,10 +31,15 @@ class Disasm(Module):
                    type=int,
                    kwargs={'min_insn_count' : 0},
                    description='Minimum number of consecutive instructions to be considered valid (default: %d)' % DEFAULT_MIN_INSN_COUNT),
+            Option(long='continue',
+                   short='k',
+                   kwargs={'keep_going' : True},
+                   description="Don't stop at the first match"),
           ]
 
     KWARGS = [
                 Kwarg(name='enabled', default=False),
+                Kwarg(name='keep_going', default=False),
                 Kwarg(name='min_insn_count', default=DEFAULT_MIN_INSN_COUNT),
              ]
 
@@ -135,7 +140,7 @@ class Disasm(Module):
                                                         count=1)
 
                     block_offset += 1
-
+                    self.status.completed += 1
 
                 if result is not None:
                     r = self.result(offset=result.offset,
@@ -145,8 +150,8 @@ class Disasm(Module):
                     if r.valid and r.display:
                         if self.config.verbose:
                             for (position, size, mnem, opnds) in result.insns:
-                                self.result(offset=position, file=fp, description="\t\t%s %s" % (mnem, opnds))
-                        if not self.config.keep_going:
+                                self.result(offset=position, file=fp, description="%s %s" % (mnem, opnds))
+                        if not self.keep_going:
                             return
 
             total_read += dlen

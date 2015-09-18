@@ -19,7 +19,7 @@ class Option(object):
     A container class that allows modules to declare command line options.
     '''
 
-    def __init__(self, kwargs={}, priority=0, description="", short="", long="", type=None, dtype=None):
+    def __init__(self, kwargs={}, priority=0, description="", short="", long="", type=None, dtype=None, hidden=False):
         '''
         Class constructor.
 
@@ -30,6 +30,7 @@ class Option(object):
         @long        - The long option to use (if None, this option will not be displayed in help output).
         @type        - The accepted data type (one of: io.FileIO/argparse.FileType/binwalk.core.common.BlockFile, list, str, int, float).
         @dtype       - The displayed accepted type string, to be shown in help output.
+        @hidden      - If set to True, this option will not be displayed in the help output.
 
         Returns None.
         '''
@@ -40,6 +41,7 @@ class Option(object):
         self.long = long
         self.type = type
         self.dtype = dtype
+        self.hidden = hidden
 
         if not self.dtype and self.type:
             if self.type in [io.FileIO, argparse.FileType, binwalk.core.common.BlockFile]:
@@ -243,9 +245,6 @@ class Module(object):
         except AttributeError as e:
             pass
 
-    def __del__(self):
-        return None
-
     def __enter__(self):
         return self
 
@@ -308,6 +307,9 @@ class Module(object):
     def _plugins_pre_scan(self):
         self.plugins.pre_scan_callbacks(self)
 
+    def _plugins_new_file(self, fp):
+        self.plugins.new_file_callbacks(fp)
+
     def _plugins_post_scan(self):
         self.plugins.post_scan_callbacks(self)
 
@@ -324,7 +326,13 @@ class Module(object):
                 result = self.RESULT
 
             for name in result:
-                args.append(getattr(r, name))
+                value = getattr(r, name)
+
+                # Displayed offsets should be offset by the base address
+                if name == 'offset':
+                    value += self.config.base
+
+                args.append(value)
 
         return args
 
@@ -347,27 +355,44 @@ class Module(object):
 
         # Add any pending extracted files to the target_files list and reset the extractor's pending file list
         self.target_file_list += self.extractor.pending
-        self.extractor.pending = []
 
-        if self.target_file_list:
+        # Reset all dependencies prior to continuing with another file.
+        # This is particularly important for the extractor module, which must be reset
+        # in order to reset it's base output directory path for each file, and the
+        # list of pending files.
+        self.reset_dependencies()
+
+        while self.target_file_list:
             next_target_file = self.target_file_list.pop(0)
 
             # Values in self.target_file_list are either already open files (BlockFile instances), or paths
             # to files that need to be opened for scanning.
-            if isinstance(next_target_file, binwalk.core.common.BlockFile):
-                fp = next_target_file
-            else:
+            if isinstance(next_target_file, str):
                 fp = self.config.open_file(next_target_file)
+            else:
+                fp = next_target_file
 
-            self.status.clear()
-            self.status.total = fp.length
+            if not fp:
+                break
+            else:
+                if self.config.file_name_filter(fp) == False:
+                    fp.close()
+                    fp = None
+                    continue
+                else:
+                    self.status.clear()
+                    self.status.total = fp.length
+                    break
 
         if fp is not None:
-            self.current_target_file_name = fp.name
+            self.current_target_file_name = fp.path
         else:
             self.current_target_file_name = None
 
         self.previous_next_file_fp = fp
+
+        self._plugins_new_file(fp)
+
         return fp
 
     def clear(self, results=True, errors=True):
@@ -391,6 +416,7 @@ class Module(object):
         if r is None:
             r = Result(**kwargs)
 
+        # Add the name of the current module to the result
         r.module = self.__class__.__name__
 
         # Any module that is reporting results, valid or not, should be marked as enabled
@@ -467,6 +493,12 @@ class Module(object):
         '''
         self.config.display.footer()
 
+    def reset_dependencies(self):
+        # Reset all dependency modules
+        for dependency in self.dependencies:
+            if hasattr(self, dependency.attribute):
+                getattr(self, dependency.attribute).reset()
+
     def main(self, parent):
         '''
         Responsible for calling self.init, initializing self.config.display, and calling self.run.
@@ -481,14 +513,11 @@ class Module(object):
         if hasattr(self, "extractor") and self.extractor.config.verbose:
             self.config.verbose = self.config.display.verbose = True
 
-        # Reset all dependency modules
-        for dependency in self.dependencies:
-            if hasattr(self, dependency.attribute):
-                getattr(self, dependency.attribute).reset()
-
         if not self.config.files:
             binwalk.core.common.debug("No target files specified, module %s terminated" % self.name)
             return False
+
+        self.reset_dependencies()
 
         try:
             self.init()
@@ -627,7 +656,7 @@ class Modules(object):
             help_string += "\n%s Options:\n" % module.TITLE
 
             for module_option in module.CLI:
-                if module_option.long:
+                if module_option.long and not module_option.hidden:
                     long_opt = '--' + module_option.long
 
                     if module_option.dtype:
@@ -640,7 +669,7 @@ class Modules(object):
                     else:
                         short_opt = "   "
 
-                    fmt = "    %%s %%s%%-%ds%%s\n" % (32-len(long_opt))
+                    fmt = "    %%s %%s%%-%ds%%s\n" % (25-len(long_opt))
                     help_string += fmt % (short_opt, long_opt, optargs, module_option.description)
 
         return help_string + "\n"

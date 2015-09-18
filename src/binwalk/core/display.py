@@ -16,9 +16,8 @@ class Display(object):
     HEADER_WIDTH = 80
     DEFAULT_FORMAT = "%s\n"
 
-    def __init__(self, quiet=False, verbose=False, log=None, csv=False, fit_to_screen=False, filter=None):
+    def __init__(self, quiet=False, verbose=False, log=None, csv=False, fit_to_screen=False):
         self.quiet = quiet
-        self.filter = filter
         self.verbose = verbose
         self.fit_to_screen = fit_to_screen
         self.fp = None
@@ -99,17 +98,15 @@ class Display(object):
     def _fprint(self, fmt, columns, csv=True, stdout=True, filter=True):
         line = fmt % tuple(columns)
 
-        # TODO: Additional filtering was originally done here to support the --grep option,
-        #       which is now depreciated. Seems redundant now, as the result won't get passed
-        #       to the display class unless it has already passed the filter.valid_result check.
-        #if not filter or self.filter.valid_result(line):
-        if True:
-            if not self.quiet and stdout:
+        if not self.quiet and stdout:
+            try:
                 sys.stdout.write(self._format_line(line.strip()) + "\n")
                 sys.stdout.flush()
+            except IOError as e:
+                pass
 
-            if self.fp and not (self.csv and not csv):
-                self.log(fmt, columns)
+        if self.fp and not (self.csv and not csv):
+            self.log(fmt, columns)
 
     def _append_to_data_parts(self, data, start, end):
         '''
@@ -144,7 +141,6 @@ class Display(object):
         delim = '\n'
         offset = 0
         self.string_parts = []
-        libmagic_newline_delim = "\\012- "
 
         # Split the line into an array of columns, e.g., ['0', '0x00000000', 'Some description here']
         line_columns = line.split(None, self.num_columns-1)
@@ -154,9 +150,6 @@ class Display(object):
             offset = line.rfind(line_columns[-1])
             # The delimiter will be a newline followed by spaces padding out the line wrap to the alignment offset.
             delim += ' ' * offset
-
-            if libmagic_newline_delim in line:
-                line = line.replace(libmagic_newline_delim, delim)
 
         if line_columns and self.fit_to_screen and len(line) > self.SCREEN_WIDTH:
             # Calculate the maximum length that each wrapped line can be
