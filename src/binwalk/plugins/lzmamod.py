@@ -16,11 +16,12 @@ class LZMAModPlugin(binwalk.core.plugin.Plugin):
     SIGNATURE = "lzma compressed data"
 
     def init(self):
-        if self.module.extractor.enabled:
-            self.module.extractor.add_rule(txtrule=None,
-                                           regex="^%s" % self.SIGNATURE,
-                                           extension="7z",
-                                           cmd=self.lzma_cable_extractor, prepend=True)
+        pass
+        #if self.module.extractor.enabled:
+        #    self.module.extractor.add_rule(txtrule=None,
+        #                                   regex="^%s" % self.SIGNATURE,
+        #                                   extension="7z",
+        #                                   cmd=self.lzma_cable_extractor, prepend=True)
 
     def lzma_cable_extractor(self, fname):
         result = False
@@ -63,5 +64,4 @@ class LZMAModPlugin(binwalk.core.plugin.Plugin):
         if result.description.lower().startswith(self.SIGNATURE) and "invalid uncompressed size" in result.description:
             if "properties: 0x5D" in result.description and "invalid dictionary size" not in result.description:
                 result.valid = True
-                result.description = result.description.split(
-                    "invalid uncompressed size")[0] + "missing uncompressed size"
+                result.description = result.description.split("invalid uncompressed size")[0] + "missing uncompressed size"

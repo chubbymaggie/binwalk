@@ -3,24 +3,28 @@
 # Minix filesystems
 0x410   string      \x7f\x13\x00\x00\x00\x00    Minix filesystem, V1, little endian,
 >0x402  beshort     x                           %d zones
+>0x402  beshort     <1                          \b, invalid zone count {invalid}
 >0x1e   string      minix                       \b, bootable
 >0x1e   string      !minix
 >>0x1e  string      !\x00\x00\x00\x00\x00       {invalid}
 
 0x410   string      \x13\x7f\x00\x00\x00\x00    Minix filesystem, V1, big endian,
 >0x402  beshort     x                           %d zones
+>0x402  beshort     <1                          \b, invalid zone count {invalid}
 >0x1e   string      minix                       \b, bootable
 >0x1e   string      !minix
 >>0x1e  string      !\x00\x00\x00\x00\x00       {invalid}
 
 0x410   string      \x8f\x13\x00\x00\x00\x00    Minix filesystem, V1, little endian, 30 char names,
 >0x402  beshort     x                           %d zones
+>0x402  beshort     <1                          \b, invalid zone count {invalid}
 >0x1e   string      minix                       \b, bootable
 >0x1e   string      !minix
 >>0x1e  string      !\x00\x00\x00\x00\x00       {invalid}
 
 0x410   string      \x13\x8f\x00\x00\x00\x00    Minix filesystem, V1, big endian, 30 char names,
 >0x402  beshort     x                           %d zones
+>0x402  beshort     <1                          \b, invalid zone count {invalid}
 >0x1e   string      minix                       \b, bootable
 >0x1e   string      !minix
 >>0x1e  string      !\x00\x00\x00\x00\x00       {invalid}
@@ -93,14 +97,15 @@
 >32     ulelong     0               invalid{invalid}
 >32     ulelong     x               CRC 0x%.8X,
 >36     ulelong     x               edition %u,
->40     lelong      <0              invalid blocks,{invalid}
+>40     lelong      <1              invalid blocks,{invalid}
 >40     ulelong     x               %u blocks,
 >44     lelong      <1              invalid file count,{invalid}
+>44     lelong      >1000000        invalid file count,{invalid}
 >44     ulelong     x               %u files
 >4      ulelong     x               {jump:%u}
 >4      ulelong     x               {size:%u}
 
-0       belong      0x28cd3d45      CramFS filesystem, big endian
+0       belong      0x28cd3d45      CramFS filesystem, big endian,
 >4      belong      <1              {invalid}
 >4      belong      >1073741824     {invalid}
 >4      belong      x               size %u,
@@ -110,9 +115,10 @@
 >32     ubelong     0               invalid{invalid}
 >32     ubelong     x               CRC 0x%.8X,
 >36     belong      x               edition %u,
->40     belong      <0              invalid blocks,{invalid}
+>40     belong      <1              invalid blocks,{invalid}
 >40     ubelong     x               %u blocks,
 >44     belong      <1              invalid file count,{invalid}
+>44     belong      >1000000        invalid file count,{invalid}
 >44     ubelong     x               %u files
 >4      ubelong     x               {jump:%u}
 >4      ubelong     x               {size:%u}
@@ -372,6 +378,7 @@
 >28     beshort >10     {invalid}
 >28     beshort <1      {invalid}
 >30     beshort >10     {invalid}
+>30     beshort <1      {invalid}
 >28     beshort x       version %d.
 >30     beshort x       \b%d,
 >28     beshort >3      compression:
@@ -383,12 +390,15 @@
 >>20    beshort >4      \b{invalid},
 >28     beshort <3
 >>8     belong  x       size: %d bytes,
+>>8     belong  <1      {invalid}
 >>8     belong  x       {size:%d}
 >28     beshort 3
 >>63    bequad  x       size: %ld bytes,
+>>63    bequad  <1      {invalid}
 >>63    bequad  x       {size:%ld}
 >28     beshort >3
 >>40    bequad  x       size: %ld bytes,
+>>40    bequad  <1      {invalid}
 >>40    bequad  x       {size:%ld}
 >4      belong  x       %d inodes,
 >28     beshort >3

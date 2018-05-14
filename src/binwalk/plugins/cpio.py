@@ -11,7 +11,7 @@ class CPIOPlugin(binwalk.core.plugin.Plugin):
     cpio utility since no output directory can be provided to it directly.
     '''
     CPIO_OUT_DIR = "cpio-root"
-    CPIO_HEADER_SIZE = 76
+    CPIO_HEADER_SIZE = 110
 
     MODULES = ['Signature']
 
@@ -44,11 +44,10 @@ class CPIOPlugin(binwalk.core.plugin.Plugin):
             return False
 
         try:
-            result = subprocess.call(
-                ['cpio', '-d', '-i', '--no-absolute-filenames'],
-                stdin=fpin,
-                stderr=fperr,
-                stdout=fperr)
+            result = subprocess.call(['cpio', '-d', '-i', '--no-absolute-filenames'],
+                                     stdin=fpin,
+                                     stderr=fperr,
+                                     stdout=fperr)
         except OSError:
             result = -1
 
@@ -73,17 +72,23 @@ class CPIOPlugin(binwalk.core.plugin.Plugin):
         return name
 
     def _get_file_name_length(self, description):
-        length = 0
+        length = None
         if 'file name length: "' in description:
             length_string = description.split('file name length: "')[1].split('"')[0]
-            length = int(length_string, 0)
+            try:
+                length = int(length_string, 0)
+            except ValueError:
+                pass
         return length
 
     def _get_file_size(self, description):
-        size = 0
+        size = None
         if 'file size: "' in description:
             size_string = description.split('file size: "')[1].split('"')[0]
-            size = int(size_string, 0)
+            try:
+                size = int(size_string, 0)
+            except ValueError:
+                pass
         return size
 
     def scan(self, result):
@@ -100,7 +105,7 @@ class CPIOPlugin(binwalk.core.plugin.Plugin):
                 file_name_length = self._get_file_name_length(result.description)
 
                 # The +1 is to include the terminating NULL byte
-                if file_name_length != len(file_name)+1:
+                if None in [file_size, file_name_length] or file_name_length != len(file_name)+1:
                     # If the reported length of the file name doesn't match the actual
                     # file name length, treat this as a false positive result.
                     result.valid = False
