@@ -1,7 +1,6 @@
 # Core code for supporting and managing plugins.
 
 import os
-import sys
 import imp
 import inspect
 import binwalk.core.common
@@ -35,6 +34,9 @@ class Plugin(object):
             self.init()
         else:
             self._enabled = False
+
+    def __str__(self):
+        return self.__class__.__name__
 
     def init(self):
         '''

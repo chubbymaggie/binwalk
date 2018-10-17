@@ -87,7 +87,7 @@
 >34     byte        !0
 >>34    string      x           {name:%s}
 >>34    string      x           original name: "%s",
->0xC    ledate      x           original file date: %s,
+>0xC    uledate      x           original file date: %s,
 >0x10   lelong      <0          {invalid}
 >0x10   lelong      x           compressed file size: %d,
 >0x14   lelong      <0          {invalid}
@@ -105,7 +105,7 @@
 >7      byte        >9          {invalid}
 >7      byte        <0          {invalid}
 
-# RAR archiver (http://kthoom.googlecode.com/hg/docs/unrar.html, https://www.rarlab.com/technote.htm#rarsign)
+# RAR archiver (http://archive.today/2014.05.14-050637/http://kthoom.googlecode.com/hg/docs/unrar.html, https://www.rarlab.com/technote.htm#rarsign)
 0   string      \x52\x61\x72\x21\x1A\x07            RAR archive data,
 >6  ubyte       >1                                  unknown version{invalid}
 >6  ubyte       1                                   version 5.x
@@ -218,8 +218,8 @@
 >6    leshort    <0           {invalid}
 >6    leshort    0            {invalid}
 >6    leshort    x            volume number: %d,
->8    ledate     x            current date: %s,
->12   ledate     x            starting date: %s,
+>8    uledate     x            current date: %s,
+>12   uledate     x            starting date: %s,
 >20   string     x            disk name: "%s",
 >36   string     x            file system name: "%s",
 >52   string     x            user name: "%s"
